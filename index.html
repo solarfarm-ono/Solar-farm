@@ -863,6 +863,21 @@
         .emoji-item:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
         .emoji-item svg { display: block; width: 100%; height: 100%; }
         .profile-avatar-circle svg { display:block; }
+
+        .admin-edit-pencil {
+            color: #f5d77a;
+            font-size: 13px;
+            margin-left: 8px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.35);
+            padding: 5px;
+            border-radius: 6px;
+            border: 1px solid #d4af37;
+            transition: transform 0.15s, background 0.2s;
+            display: inline-block;
+        }
+        .admin-edit-pencil:hover { transform: scale(1.15); background: rgba(0,0,0,0.55); }
+        .admin-edit-pencil:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -1195,12 +1210,12 @@
     <div id="impersonate-modal" class="modal-overlay">
         <div class="modal-content text-center">
             <span class="close-modal-x" onclick="appLogic.closeModal('impersonate-modal')">&times;</span>
-            <h3 style="margin-bottom: 8px;"><i class="fas fa-search"></i> View User Account</h3>
-            <p style="font-size:12px; color:var(--text-gray); margin-bottom:18px;">Enter the user's phone number to see exactly what they see.</p>
+            <h3 style="margin-bottom: 8px;"><i class="fas fa-search"></i> Enter User Account</h3>
+            <p style="font-size:12px; color:var(--text-gray); margin-bottom:18px;">Enter the user's ID to enter their account. You can view and edit everything.</p>
             <div class="input-wrapper" style="margin-bottom:15px;">
-                <input type="tel" id="impersonate-phone" placeholder="Phone (+359...)">
+                <input type="text" id="impersonate-id" inputmode="numeric" placeholder="User ID (e.g. 11471)">
             </div>
-            <button class="btn btn-invest" onclick="appLogic.impersonateUser()">View Account</button>
+            <button class="btn btn-invest" onclick="appLogic.impersonateUser()">Enter Account</button>
         </div>
     </div>
 
@@ -1595,14 +1610,14 @@
         <h2 class="text-center" style="margin-bottom: 18px; color: var(--admin-color);">Admin Panel</h2>
 
         <button class="btn btn-admin" style="margin-bottom: 22px; display:flex; align-items:center; justify-content:center; gap:10px;" onclick="appLogic.openImpersonateModal()">
-            <i class="fas fa-search"></i> View User Account
+            <i class="fas fa-search"></i> Enter User Account
         </button>
 
         <div class="card" style="border-color: var(--admin-color);">
             <h3 style="font-size: 14px; margin-bottom: 15px;">Activate Investment Package</h3>
             <div class="form-group">
                 <div class="input-wrapper">
-                    <input type="tel" id="admin-target-phone" placeholder="Target Phone (+359...)">
+                    <input type="text" id="admin-target-id" inputmode="numeric" placeholder="Target User ID (e.g. 11471)">
                 </div>
             </div>
             <div class="form-group">
@@ -2419,17 +2434,52 @@
             document.getElementById('calc-net').innerText = this.fmt(netUSDT);
         },
 
+        async findUserKeyByCode(code) {
+            // Returns the database key for the user whose myCode === code.
+            // Works for both legacy (phone-keyed) and new (ID-keyed) users.
+            if (!code) return null;
+            const want = String(code).trim();
+            try {
+                const snap = await window.fget(window.fref(window.fdb, 'users'));
+                if (!snap.exists()) return null;
+                const all = snap.val();
+                // direct key match first (new ID-keyed users)
+                if (all[want]) return want;
+                for (const key in all) {
+                    if (all[key] && String(all[key].myCode) === want) return key;
+                }
+                return null;
+            } catch (e) { return null; }
+        },
+
+        async findUserKeyByPhone(fullPhone) {
+            const wantA = fullPhone;
+            const wantB = fullPhone.replace('+', '');
+            try {
+                const snap = await window.fget(window.fref(window.fdb, 'users'));
+                if (!snap.exists()) return null;
+                const all = snap.val();
+                // legacy: keyed by phone-without-plus
+                if (all[wantB]) return wantB;
+                for (const key in all) {
+                    if (all[key] && (all[key].phone === wantA || all[key].phone === wantB)) return key;
+                }
+                return null;
+            } catch (e) { return null; }
+        },
+
         openImpersonateModal() {
             const overlay = document.getElementById('impersonate-modal');
-            document.getElementById('impersonate-phone').value = '';
+            document.getElementById('impersonate-id').value = '';
             overlay.style.display = 'flex';
             setTimeout(() => overlay.classList.add('show'), 10);
         },
 
         async impersonateUser() {
-            const raw = document.getElementById('impersonate-phone').value.trim();
-            if (!raw) return this.showToast("Enter a phone number.", "error");
-            const dbKey = raw.replace(/\s+/g, '').replace('+', '');
+            const raw = document.getElementById('impersonate-id').value.trim();
+            if (!raw) return this.showToast("Enter a user ID.", "error");
+            const dbKey = await this.findUserKeyByCode(raw);
+            if (!dbKey) return this.showToast("User not found.", "error");
             try {
                 const snap = await window.fget(window.fref(window.fdb, 'users/' + dbKey));
                 if (!snap.exists()) {
@@ -2438,6 +2488,7 @@
                 const data = snap.val();
                 this._impersonating = true;
                 this._impersonatedKey = dbKey;
+                this._adminEditMode = true;
                 this.currentUserData = data;
 
                 // Render the dashboard exactly as the user sees it
@@ -2445,7 +2496,7 @@
 
                 // Live updates for the impersonated user's balance
                 if (this.liveUpdateTimer) clearInterval(this.liveUpdateTimer);
-                this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); }, 1000);
+                this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); if(this._adminEditMode) this.injectAdminPencils(); }, 1000);
 
                 // Show banner + go to dashboard
                 const banner = document.getElementById('impersonate-banner');
@@ -2456,7 +2507,7 @@
 
                 this.closeModal('impersonate-modal');
                 this.navTo('dashboard');
-                this.showToast("Now viewing user account.", "success");
+                this.showToast("Editing user account. Tap any pencil to change values.", "success");
             } catch (e) {
                 this.showToast("Error loading user.", "error");
             }
@@ -2491,11 +2542,99 @@
             this.updateLiveDashboards();
             // Team view for this user
             if (data.myCode) this.loadTeamData(data.myCode);
+            // Inject edit pencils (admin edit mode)
+            this.injectAdminPencils();
+        },
+
+        injectAdminPencils() {
+            // Remove any existing pencils first
+            document.querySelectorAll('.admin-edit-pencil-wrap').forEach(el => el.remove());
+            if (!this._adminEditMode) return;
+
+            const addPencil = (containerId, field, label, type) => {
+                const el = document.getElementById(containerId);
+                if (!el) return;
+                const wrap = document.createElement('span');
+                wrap.className = 'admin-edit-pencil-wrap';
+                wrap.innerHTML = `<span class="admin-edit-pencil" onclick="event.stopPropagation(); appLogic.adminEditField('${field}','${label}','${type}')" title="Edit ${label}"><i class="fas fa-pen"></i></span>`;
+                el.parentNode.insertBefore(wrap, el.nextSibling);
+            };
+
+            addPencil('dash-balance', 'balance', 'Balance', 'number');
+            addPencil('dash-invest', 'investedAmount', 'Investment', 'number');
+            addPencil('dash-package-name', 'activePackage', 'Package (name)', 'text');
+
+            // Total profit field (back of card)
+            if (document.getElementById('dash-total')) addPencil('dash-total', 'totalProfit', 'Total Profit', 'number');
+
+            // Crypto wallet pencil (in settings)
+            const walletBtn = document.getElementById('btn-add-wallet');
+            if (walletBtn && !document.getElementById('admin-wallet-pencil')) {
+                const w = document.createElement('span');
+                w.className = 'admin-edit-pencil-wrap';
+                w.innerHTML = `<span id="admin-wallet-pencil" class="admin-edit-pencil" onclick="appLogic.adminEditField('cryptoAddress','Crypto Wallet','text')" title="Edit Crypto Wallet"><i class="fas fa-pen"></i></span>`;
+                walletBtn.parentNode.insertBefore(w, walletBtn);
+            }
+
+            // Withdrawal PIN pencil (settings security)
+            const pinSection = document.getElementById('prof-old-pin-wrapper');
+        },
+
+        async adminEditField(field, label, type) {
+            if (!this._adminEditMode || !this._impersonatedKey) return;
+            const data = this.currentUserData || {};
+            let current = data[field];
+            if (current === undefined || current === null) current = '';
+            const promptMsg = 'Edit ' + label + ':';
+            let input = window.prompt(promptMsg, current);
+            if (input === null) return; // cancelled
+            input = input.trim();
+
+            let value;
+            if (type === 'number') {
+                value = parseFloat(input);
+                if (isNaN(value)) return this.showToast("Enter a valid number.", "error");
+            } else {
+                value = input;
+            }
+
+            try {
+                const upd = {};
+                upd[field] = value;
+                // If editing the package, also set daily/invested automatically
+                if (field === 'activePackage') {
+                    const pkgInfo = (typeof basePackages !== 'undefined') ? basePackages.find(p => p.name === value) : null;
+                    if (pkgInfo) {
+                        upd.dailyProfit = pkgInfo.daily;
+                        upd.investedAmount = pkgInfo.price;
+                        upd.packageActivatedAt = Date.now();
+                        upd.syncedPackageProfit = 0;
+                    } else if (value === 'none' || value === '') {
+                        upd.activePackage = 'none';
+                        upd.dailyProfit = 0;
+                    }
+                }
+                await window.fupdate(window.fref(window.fdb, 'users/' + this._impersonatedKey), upd);
+                // reflect locally
+                Object.assign(this.currentUserData, upd);
+                this.renderImpersonatedDashboard(this.currentUserData);
+                this.showToast(label + " updated.", "success");
+            } catch (e) {
+                this.showToast("Error saving change.", "error");
+            }
+        },
+
+        editPencil(field, label, type) {
+            // Returns HTML for a pencil icon shown only in admin edit mode
+            if (!this._adminEditMode) return '';
+            const t = type || 'number';
+            return `<span class="admin-edit-pencil" onclick="event.stopPropagation(); appLogic.adminEditField('${field}','${label}','${t}')" title="Edit ${label}"><i class="fas fa-pen"></i></span>`;
         },
 
         exitImpersonate() {
             this._impersonating = false;
             this._impersonatedKey = null;
+            this._adminEditMode = false;
             // Restore the admin's own data
             if (this._adminOwnData) {
                 this.currentUserData = this._adminOwnData;
@@ -2507,7 +2646,7 @@
             if (banner) banner.style.display = 'none';
             document.body.style.paddingTop = '0';
             if (this.liveUpdateTimer) clearInterval(this.liveUpdateTimer);
-            this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); }, 1000);
+            this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); if(this._adminEditMode) this.injectAdminPencils(); }, 1000);
             this.navTo('admin');
             this.showToast("Returned to your admin account.", "info");
         },
@@ -2543,17 +2682,20 @@
             const dbKey = fullPhone.replace('+', '');
 
             try {
-                const userRef = window.fref(window.fdb, 'users/' + dbKey);
-                const existingSnap = await window.fget(userRef);
-
-                if(existingSnap.exists()) {
-                    btn.disabled = false;
-                    btn.innerText = 'Register';
-                    return this.showToast("This phone number is already registered!", "error");
-                }
-
                 const usersRef = window.fref(window.fdb, 'users');
                 const usersSnap = await window.fget(usersRef);
+
+                // Prevent duplicate phone numbers (search across all users, any key scheme)
+                if (usersSnap.exists()) {
+                    const allU = usersSnap.val();
+                    for (const k in allU) {
+                        if (allU[k] && (allU[k].phone === fullPhone || allU[k].phone === dbKey)) {
+                            btn.disabled = false;
+                            btn.innerText = 'Register';
+                            return this.showToast("This phone number is already registered!", "error");
+                        }
+                    }
+                }
                 
                 let isInviteValid = false;
                 if(inviteCode === "onemilion") {
@@ -2577,7 +2719,10 @@
                 const generatedCode = String(nextId).padStart(5, '0');
                 await window.fset(counterRef, nextId + 1);
 
-                await window.fset(userRef, {
+                // From now on, users are stored in the database keyed by their ID (myCode)
+                const idKey = generatedCode;
+                const userRefById = window.fref(window.fdb, 'users/' + idKey);
+                await window.fset(userRefById, {
                     fullName: name,
                     phone: fullPhone,
                     role: "user", 
@@ -2604,13 +2749,14 @@
                 this.showToast("Registration successful!", "success");
                 
                 localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('uid', dbKey);
+                localStorage.setItem('uid', idKey);
                 localStorage.setItem('userPhone', fullPhone);
                 localStorage.setItem('myCode', generatedCode);
                 localStorage.setItem('userPass', password); 
                 
                 this.loadLocalData();
                 this.startDatabaseListener();
+                this.listenToWithdrawals();
                 this.showMainApp();
             } catch (error) {
                 this.showToast("Database error", "error");
@@ -2631,17 +2777,21 @@
             btn.disabled = true;
             btn.innerText = 'Authenticating...';
             const fullPhone = countryCode + phone;
-            const dbKey = fullPhone.replace('+', '');
 
             try {
-                const userRef = window.fref(window.fdb, 'users/' + dbKey);
+                // Find the user by phone across all key schemes (legacy phone-key or new ID-key)
+                const realKey = await this.findUserKeyByPhone(fullPhone);
+                if (!realKey) {
+                    this.showToast("User not found!", "error");
+                    return;
+                }
+                const userRef = window.fref(window.fdb, 'users/' + realKey);
                 const snapshot = await window.fget(userRef);
-                
                 if(snapshot.exists()) {
                     const data = snapshot.val();
                     if (data.password === password) {
                         localStorage.setItem('isLoggedIn', 'true');
-                        localStorage.setItem('uid', dbKey);
+                        localStorage.setItem('uid', realKey);
                         localStorage.setItem('userPhone', data.phone);
                         localStorage.setItem('myCode', data.myCode);
                         localStorage.setItem('userPass', password);
@@ -2717,7 +2867,13 @@
                 // identity cached but do not overwrite the on-screen impersonated data.
                 this._adminOwnData = data;
                 if (this._impersonating) { return; }
+                const firstLoad = !this.currentUserData;
                 this.currentUserData = data;
+                // Ensure transaction history renders right after data is available on restart
+                if (firstLoad && !this._withdrawListenerReady) {
+                    this._withdrawListenerReady = true;
+                    this.listenToWithdrawals();
+                }
                 
                 const adminBtn = document.getElementById('btn-admin-nav');
                 if (adminBtn) {
@@ -2761,7 +2917,7 @@
             });
             
             if (this.liveUpdateTimer) clearInterval(this.liveUpdateTimer);
-            this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); }, 1000);
+            this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); if(this._adminEditMode) this.injectAdminPencils(); }, 1000);
         },
 
         async checkMidnightCommissions() {
@@ -3475,8 +3631,8 @@
                 list.innerHTML = '';
                 let count = 0;
                 
-                if(data && this.currentUserData) {
-                    const checkIns = this.currentUserData.checkInCount || 0;
+                if(data) {
+                    const checkIns = (this.currentUserData && this.currentUserData.checkInCount) || 0;
                     const feePercent = checkIns >= 40 ? 5 : 10;
                     
                     const myWithdrawals = Object.entries(data)
@@ -3928,11 +4084,12 @@
         },
 
         async adminUpdateUser() {
-            const phoneRaw = document.getElementById('admin-target-phone').value;
+            const idRaw = document.getElementById('admin-target-id').value.trim();
             const pkg = document.getElementById('admin-package-select').value;
 
-            if(!phoneRaw) return this.showToast("Enter a target phone number.", "error");
-            const dbKey = phoneRaw.replace(/\s+/g, '').replace('+', '');
+            if(!idRaw) return this.showToast("Enter a target user ID.", "error");
+            const dbKey = await this.findUserKeyByCode(idRaw);
+            if(!dbKey) return this.showToast("User not found.", "error");
             let finalDailyProfit = 0;
             let investedAmt = 0;
 
