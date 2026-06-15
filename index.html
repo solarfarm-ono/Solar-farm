@@ -409,14 +409,15 @@
             font-weight: 900;
             color: #ffffff;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            background: #2563eb;
-            padding: 6px 12px;
-            border-radius: var(--border-radius-sm);
-            box-shadow: 0 3px 8px rgba(37,99,235,0.4);
+            transition: opacity 0.2s;
+            background: transparent;
+            padding: 6px 0;
+            border-radius: 0;
+            box-shadow: none;
+            text-shadow: -1px -1px 1px rgba(255,255,255,0.25), 1px 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.5);
         }
-        .card-withdraw-text:hover { background: #1d4ed8; }
-        .card-withdraw-text:active { background: #1e3a8a; }
+        .card-withdraw-text:hover { opacity: 0.8; }
+        .card-withdraw-text:active { opacity: 0.6; }
 
         .card-title { font-size: 13px; text-transform: capitalize; margin-bottom: 3px; }
         .card-currency { font-size: 15px; font-weight: bold; margin-bottom: 5px; color: var(--text-gray); }
@@ -468,18 +469,22 @@
         .close-btn:active { background: rgba(0,0,0,0.1); }
 
         .package-card { 
-            background: rgba(255, 255, 255, 0.55);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background-color: #0a1d3a;
+            background-image:
+                radial-gradient(circle at top left, rgba(80, 140, 255, 0.35) 0%, transparent 60%),
+                radial-gradient(circle at bottom right, rgba(30, 60, 120, 0.5) 0%, transparent 65%);
             border-radius: var(--border-radius-md); padding: 25px; margin-bottom: 25px; 
-            border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 8px 24px rgba(20,50,90,0.08);
+            border: 1.5px solid #d4af37; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.35), inset 0 2px 10px rgba(255,255,255,0.08);
             position: relative; overflow: hidden;
         }
-        .package-title { font-size: 22px; font-weight: 900; color: #000; margin-bottom: 5px; text-transform: capitalize; }
-        .package-price { font-size: 32px; font-weight: 900; margin: 15px 0; color: #000; }
+        .package-title { font-size: 22px; font-weight: 900; color: #ffffff; margin-bottom: 5px; text-transform: capitalize;
+            text-shadow: -1px -1px 1px rgba(255,255,255,0.25), 1px 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.5); }
+        .package-price { font-size: 32px; font-weight: 900; margin: 15px 0; color: #ffffff;
+            text-shadow: -1px -1px 1px rgba(255,255,255,0.25), 1px 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.5); }
         .package-details { 
             display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 12px; 
-            background: rgba(255,255,255,0.6); padding: 15px; border-radius: var(--border-radius-sm); border: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.10); padding: 15px; border-radius: var(--border-radius-sm); border: 1px solid rgba(0,0,0,0.05);
         }
         .package-details strong { color: #000; font-size: 16px; display: block; margin-top: 5px; font-weight: 900; }
 
@@ -889,6 +894,11 @@
 </div>
 
 <div id="app-container">
+    <div id="impersonate-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:#7c2d12; color:#fff; padding:10px 14px; font-size:12px; font-weight:800; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.3);">
+        <span id="impersonate-banner-text">Viewing user account</span>
+        <button onclick="appLogic.exitImpersonate()" style="margin-left:12px; background:#fff; color:#7c2d12; border:none; border-radius:6px; padding:4px 10px; font-weight:800; cursor:pointer; font-size:11px;">Exit</button>
+    </div>
+
 
     <div id="login-view" class="view active">
         <div class="text-center">
@@ -1179,6 +1189,18 @@
             <button class="btn btn-invest" id="btn-withdraw" onclick="appLogic.withdraw()">
                 <span data-i18n="withdrawal">Withdrawal</span>
             </button>
+        </div>
+    </div>
+
+    <div id="impersonate-modal" class="modal-overlay">
+        <div class="modal-content text-center">
+            <span class="close-modal-x" onclick="appLogic.closeModal('impersonate-modal')">&times;</span>
+            <h3 style="margin-bottom: 8px;"><i class="fas fa-search"></i> View User Account</h3>
+            <p style="font-size:12px; color:var(--text-gray); margin-bottom:18px;">Enter the user's phone number to see exactly what they see.</p>
+            <div class="input-wrapper" style="margin-bottom:15px;">
+                <input type="tel" id="impersonate-phone" placeholder="Phone (+359...)">
+            </div>
+            <button class="btn btn-invest" onclick="appLogic.impersonateUser()">View Account</button>
         </div>
     </div>
 
@@ -1570,7 +1592,11 @@
 
     <div id="admin-view" class="view">
         <button class="back-btn" onclick="appLogic.navTo('dashboard')"><i class="fas fa-arrow-left"></i> Exit Admin</button>
-        <h2 class="text-center" style="margin-bottom: 25px; color: var(--admin-color);">Admin Panel</h2>
+        <h2 class="text-center" style="margin-bottom: 18px; color: var(--admin-color);">Admin Panel</h2>
+
+        <button class="btn btn-admin" style="margin-bottom: 22px; display:flex; align-items:center; justify-content:center; gap:10px;" onclick="appLogic.openImpersonateModal()">
+            <i class="fas fa-search"></i> View User Account
+        </button>
 
         <div class="card" style="border-color: var(--admin-color);">
             <h3 style="font-size: 14px; margin-bottom: 15px;">Activate Investment Package</h3>
@@ -2332,18 +2358,18 @@
                 container.innerHTML += `
                     <div class="package-card${isLast ? ' full-row' : ''}">
                         <div class="package-title">${pkg.name}</div>
-                        <div style="font-size: 12px; color: var(--text-gray); margin-bottom: 5px;">
-                            ${this.t("remaining")}: <strong>${remaining}</strong> ${this.t("pcs")}
+                        <div style="font-size: 12px; color: #cdd8ec; margin-bottom: 5px;">
+                            ${this.t("remaining")}: <strong style="color:#ffffff;">${remaining}</strong> ${this.t("pcs")}
                         </div>
                         ${priceHtml}
                         <div class="package-details">
                             <div style="text-align: left;">
-                                <span style="color: var(--text-gray); font-size: 11px;">${this.t("dailyReturn")}:</span>
-                                <strong>${this.fmt(pkg.daily)}</strong>
+                                <span style="color: #cdd8ec; font-size: 11px;">${this.t("dailyReturn")}:</span>
+                                <strong style="color:#ffffff;">${this.fmt(pkg.daily)}</strong>
                             </div>
-                            <div style="text-align: right; border-left: 1px solid #eee; padding-left: 15px;">
-                                <span style="color: var(--text-gray); font-size: 11px;">${this.t("monthlyYield")}:</span>
-                                <strong>${this.fmt(pkg.monthly)}</strong>
+                            <div style="text-align: right; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 15px;">
+                                <span style="color: #cdd8ec; font-size: 11px;">${this.t("monthlyYield")}:</span>
+                                <strong style="color:#ffffff;">${this.fmt(pkg.monthly)}</strong>
                             </div>
                         </div>
                         <button class="btn btn-invest" onclick="appLogic.openPaymentModal('${pkg.name}', ${currentPrice})">${this.t("investNow")}</button>
@@ -2391,6 +2417,99 @@
 
             document.getElementById('calc-result-box').style.display = 'block';
             document.getElementById('calc-net').innerText = this.fmt(netUSDT);
+        },
+
+        openImpersonateModal() {
+            const overlay = document.getElementById('impersonate-modal');
+            document.getElementById('impersonate-phone').value = '';
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('show'), 10);
+        },
+
+        async impersonateUser() {
+            const raw = document.getElementById('impersonate-phone').value.trim();
+            if (!raw) return this.showToast("Enter a phone number.", "error");
+            const dbKey = raw.replace(/\s+/g, '').replace('+', '');
+            try {
+                const snap = await window.fget(window.fref(window.fdb, 'users/' + dbKey));
+                if (!snap.exists()) {
+                    return this.showToast("User not found.", "error");
+                }
+                const data = snap.val();
+                this._impersonating = true;
+                this._impersonatedKey = dbKey;
+                this.currentUserData = data;
+
+                // Render the dashboard exactly as the user sees it
+                this.renderImpersonatedDashboard(data);
+
+                // Live updates for the impersonated user's balance
+                if (this.liveUpdateTimer) clearInterval(this.liveUpdateTimer);
+                this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); }, 1000);
+
+                // Show banner + go to dashboard
+                const banner = document.getElementById('impersonate-banner');
+                const phoneShown = this.maskPhone(data.phone || raw);
+                document.getElementById('impersonate-banner-text').innerText = 'Viewing: ' + phoneShown + '  (ID: ' + (data.myCode || '-') + ')';
+                banner.style.display = 'block';
+                document.body.style.paddingTop = '42px';
+
+                this.closeModal('impersonate-modal');
+                this.navTo('dashboard');
+                this.showToast("Now viewing user account.", "success");
+            } catch (e) {
+                this.showToast("Error loading user.", "error");
+            }
+        },
+
+        renderImpersonatedDashboard(data) {
+            // Header
+            document.getElementById('display-phone').innerText = this.maskPhone(data.phone || '');
+            document.getElementById('display-id').innerText = 'ID: ' + (data.myCode || '');
+            const codeEl = document.getElementById('affiliate-code-display');
+            if (codeEl) codeEl.innerText = data.myCode || '';
+            if (data.avatar) this.setAvatarDisplay(data.avatar);
+            this.updateWalletDisplay();
+
+            // Investment / package name
+            let investUSDT = data.investedAmount || 0;
+            if (investUSDT === 0 && data.activePackage && data.activePackage !== "none") {
+                const pkgInfo = basePackages.find(p => p.name === data.activePackage);
+                if (pkgInfo) investUSDT = pkgInfo.price;
+            }
+            const extra = data.extraPackages || {};
+            for (const k in extra) investUSDT += parseFloat(extra[k].price || 0);
+            const di = document.getElementById('dash-invest');
+            if (di) di.innerText = this.fmt(investUSDT);
+            const extraCount = data.extraPackages ? Object.keys(data.extraPackages).length : 0;
+            let pkgNameText = (data.activePackage && data.activePackage !== "none") ? data.activePackage : this.t('noActivePackage');
+            if (extraCount > 0) pkgNameText += ` (+${extraCount})`;
+            const dp = document.getElementById('dash-package-name');
+            if (dp) dp.innerText = pkgNameText;
+
+            // Balances / profit figures
+            this.updateLiveDashboards();
+            // Team view for this user
+            if (data.myCode) this.loadTeamData(data.myCode);
+        },
+
+        exitImpersonate() {
+            this._impersonating = false;
+            this._impersonatedKey = null;
+            // Restore the admin's own data
+            if (this._adminOwnData) {
+                this.currentUserData = this._adminOwnData;
+                this.renderImpersonatedDashboard(this._adminOwnData);
+                // also restore code/link from localStorage
+                this.loadLocalData();
+            }
+            const banner = document.getElementById('impersonate-banner');
+            if (banner) banner.style.display = 'none';
+            document.body.style.paddingTop = '0';
+            if (this.liveUpdateTimer) clearInterval(this.liveUpdateTimer);
+            this.liveUpdateTimer = setInterval(() => { this.updateLiveDashboards(); }, 1000);
+            this.navTo('admin');
+            this.showToast("Returned to your admin account.", "info");
         },
 
         maskPhone(phone) {
@@ -2594,6 +2713,10 @@
                     this.secureLogout();
                     return;
                 }
+                // While an admin is viewing another user's account, keep the admin's own
+                // identity cached but do not overwrite the on-screen impersonated data.
+                this._adminOwnData = data;
+                if (this._impersonating) { return; }
                 this.currentUserData = data;
                 
                 const adminBtn = document.getElementById('btn-admin-nav');
