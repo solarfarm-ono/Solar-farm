@@ -751,21 +751,25 @@
         #packages-container {
             display: flex;
             flex-direction: row;
-            gap: 0;
+            gap: 24px;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
             scroll-behavior: smooth;
             width: 100%;
-            padding: 4px 0;
+            padding: 8px 16px;
+            box-sizing: border-box;
         }
         #packages-container::-webkit-scrollbar { display: none; }
         #packages-container { -ms-overflow-style: none; scrollbar-width: none; }
         #packages-carousel-wrap { width: 100%; overflow: hidden; }
+        #packages-container::-webkit-scrollbar { display: none; }
+        #packages-container { -ms-overflow-style: none; scrollbar-width: none; }
+        #packages-carousel-wrap { width: 100%; overflow: hidden; }
         #packages-container .package-card {
-            flex: 0 0 100%;
-            width: 100% !important;
-            max-width: 100% !important;
+            flex: 0 0 calc(100% - 32px);
+            width: calc(100% - 32px) !important;
+            max-width: calc(100% - 32px) !important;
             margin: 0 !important;
             padding: 26px 22px !important;
             position: relative;
@@ -1305,11 +1309,11 @@
         }
         .card-3d-container {
             position: relative;
-            padding: 2px;
+            padding: 2.5px;
             border-radius: calc(var(--border-radius-md) + 2px);
-            background: linear-gradient(90deg, #d4af37, #f5e08c, #ffffff, #c0c0c0, #d4af37, #f5e08c, #d4af37);
+            background: linear-gradient(90deg, #d4af37 0%, #d4af37 30%, #e8e8e8 60%, #c0c0c0 100%);
             background-size: 200% 100%;
-            animation: cardLineFlow 4s linear infinite;
+            animation: cardLineFlow 3s linear infinite;
         }
         .card-3d {
             border-radius: var(--border-radius-md);
@@ -1319,7 +1323,7 @@
 
         #dashboard-view {
             background-color: #ffffff;
-            background-image: radial-gradient(circle at top left, rgba(150,210,255,0.8) 0%, transparent 55%), linear-gradient(180deg, rgba(255,255,255,0) 30%, #ffffff 60%);
+            background-image: radial-gradient(circle at top left, rgba(150,210,255,0.8) 0%, transparent 55%), radial-gradient(circle at top right, rgba(255,240,150,0.8) 0%, transparent 55%), linear-gradient(180deg, rgba(255,255,255,0) 30%, #ffffff 60%);
             background-repeat: no-repeat;
             background-size: 100% 100%;
             background-attachment: fixed;
@@ -1327,8 +1331,8 @@
         }
 
 
-        #btn-register:active, #btn-register:focus, #btn-register:hover,
-        #btn-login:active, #btn-login:focus, #btn-login:hover,
+        #btn-register:active:not(:disabled), #btn-register:focus:not(:disabled), #btn-register:hover:not(:disabled),
+        #btn-login:active:not(:disabled), #btn-login:focus:not(:disabled), #btn-login:hover:not(:disabled),
         #btn-register:focus-visible, #btn-login:focus-visible {
             background-color:#0a1d3a !important; background-image: radial-gradient(circle at top left, rgba(80,140,255,0.35) 0%, transparent 60%), radial-gradient(circle at bottom right, rgba(30,60,120,0.5) 0%, transparent 65%) !important;
             color:#ffffff !important;
@@ -1337,6 +1341,67 @@
             filter:none !important;
         }
         #btn-register:active *, #btn-login:active * { color:#ffffff !important; }
+
+
+        #login-view .input-wrapper:focus-within, #register-view .input-wrapper:focus-within {
+            background: rgba(60,60,60,0.12) !important;
+            border: 1.5px solid #d4af37 !important;
+            box-shadow: 0 0 0 2px rgba(212,175,55,0.25) !important;
+        }
+        #login-view .input-wrapper:focus-within input, #register-view .input-wrapper:focus-within input,
+        #login-view input:focus, #register-view input:focus {
+            color: #000000 !important;
+        }
+
+
+        #login-view .phone-code, #login-view .phone-number,
+        #register-view .phone-code, #register-view .phone-number {
+            border-radius: 8px !important;
+        }
+        #login-country-code, #reg-country-code {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            border-radius: 8px !important;
+            background-image: none !important;
+        }
+        #login-view .phone-code .input-wrapper, #register-view .phone-code .input-wrapper,
+        #login-view .phone-number .input-wrapper, #register-view .phone-number .input-wrapper {
+            border-radius: 8px !important;
+        }
+
+
+        .profile-avatar-circle, .emoji-item {
+            background-color: transparent !important;
+            overflow: hidden !important;
+        }
+        .profile-avatar-circle img, .emoji-item img {
+            width: 100% !important; height: 100% !important;
+            object-fit: cover !important; border-radius: 50% !important;
+            display: block !important;
+        }
+
+
+        @keyframes pkgEmergeDeep {
+            0% { opacity: 0; transform: scale(0.82) translateZ(-60px); filter: blur(2px); }
+            100% { opacity: 1; transform: scale(1) translateZ(0); filter: blur(0); }
+        }
+        #packages-container .package-card {
+            transition: transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.6s ease, filter 0.6s ease;
+        }
+        #packages-container .package-card.pkg-emerge {
+            animation: pkgEmergeDeep 0.7s cubic-bezier(0.22,1,0.36,1);
+        }
+
+
+        #affiliate-view {
+            background-color: #ffffff;
+            background-image: radial-gradient(circle at top left, rgba(150,210,255,0.8) 0%, transparent 55%), radial-gradient(circle at top right, rgba(255,240,150,0.8) 0%, transparent 55%), linear-gradient(180deg, rgba(255,255,255,0) 30%, #ffffff 60%);
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
 
     </style>
 </head>
@@ -2032,8 +2097,9 @@
 
     <div id="energy-plans-view" class="view">
         <button class="back-btn close-btn" onclick="appLogic.navTo('dashboard')"><i class="fas fa-times"></i></button>
-        <button onclick="window.open('https://docs.google.com/document/d/11wC7zscPA87C5LLF2ow01mrI9novMzq7JrUuKt0b-AY/edit?usp=drivesdk', '_blank')" style="display:block; width:100%; margin:8px 0 18px; padding:14px; background-color:#0a1d3a; background-image: radial-gradient(circle at top left, rgba(80,140,255,0.35) 0%, transparent 60%), radial-gradient(circle at bottom right, rgba(30,60,120,0.5) 0%, transparent 65%); color:#ffffff; border:1.5px solid #d4af37; border-radius:12px; font-weight:800; font-size:15px; cursor:pointer;" data-i18n="seeMore">See more</button>
         <h2 style="text-transform: capitalize; text-align: center; margin-bottom: 20px;" data-i18n="information">Information</h2>
+        <button onclick="window.open('https://docs.google.com/document/d/11wC7zscPA87C5LLF2ow01mrI9novMzq7JrUuKt0b-AY/edit?usp=drivesdk', '_blank')" style="display:block; width:100%; margin:8px 0 18px; padding:14px; background-color:#0a1d3a; background-image: radial-gradient(circle at top left, rgba(80,140,255,0.35) 0%, transparent 60%), radial-gradient(circle at bottom right, rgba(30,60,120,0.5) 0%, transparent 65%); color:#ffffff; border:1.5px solid #d4af37; border-radius:12px; font-weight:800; font-size:15px; cursor:pointer;" data-i18n="seeMore">See more</button>
+        
             <style>
         .info-how-works-block {
             background-color: #0a1d3a;
@@ -3849,6 +3915,7 @@
                     </div>
                 `;
             });
+            try { this.attachCarouselDepth(); } catch(e) {}
         },
 
         populateCalculator() {
@@ -4903,29 +4970,44 @@
                 const snap = await window.fget(window.fref(window.fdb, 'users'));
                 if (!snap.exists()) { list.innerHTML = '<p style="font-size:12px; text-align:center;">No data.</p>'; return; }
                 const all = snap.val();
-                const downline = Object.values(all).filter(u => u.inviteCodeUsed === myCode);
+                const allUsers = Object.values(all);
+                const downline = allUsers.filter(u => u.inviteCodeUsed === myCode);
+                // compute each member's active team count (their own active invitees)
+                downline.forEach(member => {
+                    const theirTeam = allUsers.filter(x => x.inviteCodeUsed === member.myCode);
+                    member.activeTeamCount = theirTeam.filter(x => x.activePackage && x.activePackage !== 'none').length;
+                });
                 if (downline.length === 0) {
                     list.innerHTML = '<p style="font-size:12px; text-align:center; color:#cdd8ec;">This member has not invited anyone yet.</p>';
                     return;
                 }
                 let h = '';
                 downline.forEach(u => {
-                    const av = u.avatar || 'av1';
+                    const av = u.avatar || 'av_logo';
+                    // active package
                     let pkg = (u.activePackage && u.activePackage !== 'none') ? u.activePackage : '';
                     if (!pkg && u.extraPackages) { const ek = Object.keys(u.extraPackages); if (ek.length) pkg = u.extraPackages[ek[0]].name || ''; }
                     if (!pkg) pkg = this.t('noActivePackage') || 'No Active Package';
-                    const ph = u.phone || '';
-                    const maskedPhone = ph.length > 8 ? (ph.substring(0,5) + '****' + ph.substring(ph.length-3)) : ph;
+                    // phone masked as +359.00****000  (keep country code start, mask middle, last 3)
+                    const ph = (u.phone || '').replace(/\s/g, '');
+                    let maskedPhone = ph;
+                    if (ph.length >= 8) {
+                        const head = ph.substring(0, 6);
+                        const tail = ph.substring(ph.length - 3);
+                        maskedPhone = head + '****' + tail;
+                    }
+                    // level: count this member's active downline if available, else 0
+                    let memberActive = 0;
+                    if (u.activeTeamCount !== undefined) memberActive = u.activeTeamCount;
+                    const lvl = this.getLevelInfo(memberActive);
                     h += `
-                        <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.15);">
-                            <div style="width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;">${this.getAvatarSVG(av)}</div>
-                            <div style="flex:1;">
-                                <div style="display:flex; justify-content:space-between;">
-                                    <span style="font-size:13px; font-weight:bold; color:#ffffff;">${u.fullName || 'User'}</span>
-                                    <span style="font-size:11px; color:#cdd8ec;">ID: ${u.myCode || '-'}</span>
-                                </div>
-                                <div style="font-size:11px; color:#cdd8ec; margin-top:3px;">📞 ${maskedPhone}</div>
-                                <div style="font-size:11px; color:#d4af37; margin-top:2px; font-weight:600;">${pkg}</div>
+                        <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.15);">
+                            <div style="width:46px;height:46px;border-radius:50%;overflow:hidden;flex-shrink:0;">${this.getAvatarSVG(av)}</div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:14px; font-weight:bold; color:#ffffff;">${u.fullName || 'User'}</div>
+                                <div style="font-size:12px; color:#cdd8ec; margin-top:3px;">📞 ${maskedPhone}</div>
+                                <div style="font-size:12px; color:#d4af37; margin-top:2px; font-weight:600;">${pkg}</div>
+                                <div style="font-size:11px; color:#9fb0cc; margin-top:2px;">${lvl.name} (${lvl.percent}%)</div>
                             </div>
                         </div>`;
                 });
@@ -5821,6 +5903,31 @@
                 this.showToast("Deleted.", "success");
                 this.renderTxList();
             } catch(e) { this.showToast("Error.", "error"); }
+        },
+
+        attachCarouselDepth() {
+            const c = document.getElementById('packages-container');
+            if (!c || c._depthAttached) return;
+            c._depthAttached = true;
+            let timer = null;
+            const apply = () => {
+                const cards = c.querySelectorAll('.package-card');
+                const center = c.scrollLeft + c.clientWidth / 2;
+                cards.forEach(card => {
+                    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+                    const dist = Math.abs(center - cardCenter);
+                    const ratio = Math.max(0, 1 - dist / c.clientWidth);
+                    const scale = 0.86 + 0.14 * ratio;
+                    const op = 0.5 + 0.5 * ratio;
+                    card.style.transform = `scale(${scale})`;
+                    card.style.opacity = op;
+                });
+            };
+            c.addEventListener('scroll', () => {
+                if (timer) cancelAnimationFrame(timer);
+                timer = requestAnimationFrame(apply);
+            });
+            setTimeout(apply, 50);
         },
 
         populateEditPkgSelect() {
